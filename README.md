@@ -1,1 +1,1 @@
-# rats
+Reinforcement learning agents
