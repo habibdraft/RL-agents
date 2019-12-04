@@ -15,7 +15,7 @@ class TDAgent:
     
     def update(self, state, action, reward, newValue):
         currentQ = self.getQValue(state, action)
-        if currentQ == 0:
+        if currentQ == None:
             self.Q[(state, action)] = reward 
         else:
             self.Q[(state, action)] = currentQ + self.alpha * (newValue - currentQ)
