@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 class TDAgent:
-    def __init__(self, states, actions, epsilon=0.7, alpha=0.1, gamma=0.1, epsilonDecay=0.9):
+    def __init__(self, actions, epsilon=0.7, alpha=0.1, gamma=0.1, epsilonDecay=0.9):
         self.q = {}
         self.actions = [i for i in range(actions)]
         self.epsilon = epsilon
