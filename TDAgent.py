@@ -60,5 +60,5 @@ class ExpectedSarsaAgent(TDAgent):
     
     def learn(self, state, action, reward, state2):
         meanQ = mean([self.getQValue(state2, a) for a in self.actions])
-        self.updateQ(state, action, reward, reward + self.gamma * meanQ)
+        self.update(state, action, reward, reward + self.gamma * meanQ)
 
