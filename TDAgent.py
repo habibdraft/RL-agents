@@ -31,8 +31,8 @@ class TDAgent:
             maxQ = max(q)
             count = q.count(maxQ)
             if count > 1:
-                best = [a for a in self.actions if q[a] == maxQ] 
-                index = random.choice(best)
+                maxActions = [a for a in self.actions if q[a] == maxQ] 
+                index = random.choice(maxActions)
             else:
                 index = q.index(maxQ)
 
