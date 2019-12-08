@@ -24,7 +24,7 @@ class TDAgent:
         pass
         
     def act(self, state):
-        if np.random.rand() < self.epsilon:
+        if random.random() < self.epsilon:
             action = random.choice(self.actions)
         else:
             q = [self.getQValue(state, a) for a in self.actions] 
