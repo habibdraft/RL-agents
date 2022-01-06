@@ -2,11 +2,11 @@ import gym
 import agents
 
 env = gym.make('Taxi-v3')
-agent = agents.QLearnAgent(actions=env.action_space.n)
+agent = agents.QLearningAgent(actions=env.action_space.n)
 
 episodes = 10000
-totalSteps = 0
-totalReward = 0
+total_steps = 0
+total_reward = 0
 
 for episode in range(episodes):
     
@@ -22,10 +22,10 @@ for episode in range(episodes):
         state = next_state
         
         steps += 1
-        totalReward += reward
+        total_reward += reward
 
-    totalSteps += steps
+    total_steps += steps
     
-print("Average timesteps taken: {}".format(totalSteps/episodes))
-print("Average reward: {}".format(totalReward/episodes))
-print("Total reward: {}".format(totalReward))
+print("Average timesteps taken: {}".format(total_steps/episodes))
+print("Average reward: {}".format(total_reward/episodes))
+print("Total reward: {}".format(total_reward))
