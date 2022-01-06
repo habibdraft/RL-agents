@@ -5,8 +5,8 @@ env = gym.make('Taxi-v3')
 agent = agents.SarsaAgent(actions=env.action_space.n)
 
 episodes = 10000
-totalSteps = 0
-totalReward = 0
+total_steps = 0
+total_reward = 0
 
 for episode in range(episodes):
     
@@ -17,20 +17,20 @@ for episode in range(episodes):
     
     while not done:
         action = agent.act(state)
-        if agent.lastAction is not None:
-            agent.learn(agent.lastState, agent.lastAction, agent.lastReward, state, action)
+        if agent.last_action is not None:
+            agent.learn(agent.last_state, agent.last_action, agent.last_reward, state, action)
             
-        agent.lastAction = action
-        agent.lastState = state
+        agent.last_action = action
+        agent.last_state = state
         
         state, reward, done, info = env.step(action)
-        agent.lastReward = reward
+        agent.last_reward = reward
         
         steps += 1
-        totalReward += reward
+        total_reward += reward
 
-    totalSteps += steps
+    total_steps += steps
     
-print("Average timesteps taken: {}".format(totalSteps/episodes))
-print("Average reward: {}".format(totalReward/episodes))
-print("Total reward: {}".format(totalReward))
+print("Average timesteps taken: {}".format(total_steps/episodes))
+print("Average reward: {}".format(total_reward/episodes))
+print("Total reward: {}".format(total_reward))
