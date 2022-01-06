@@ -54,9 +54,3 @@ class QLearnAgent(Agent):
     def learn(self, state, action, reward, state2, _):
         maxQ = max([self.getQValue(state2, a) for a in self.actions])
         self.update(state, action, reward, reward + self.gamma * maxQ)
-
-class ExpectedSarsaAgent(Agent):
-    
-    def learn(self, state, action, reward, state2):
-        meanQ = mean([self.getQValue(state2, a) for a in self.actions])
-        self.update(state, action, reward, reward + self.gamma * meanQ)
