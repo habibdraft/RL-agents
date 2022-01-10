@@ -12,12 +12,12 @@ class Agent:
         self.last_action = None
         self.last_reward = None
     
-    def update(self, state, action, reward, newValue):
+    def update(self, state, action, reward, new_value):
         current_q = self.get_q(state, action)
         if current_q == None:
             self.q[(state, action)] = reward 
         else:
-            self.q[(state, action)] = current_q + self.alpha * (newValue - current_q)
+            self.q[(state, action)] = current_q + self.alpha * (new_value - current_q)
             
     def learn(self, state, action, reward, state2, action2):
         pass
