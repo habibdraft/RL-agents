@@ -12,13 +12,6 @@ class Agent:
         self.last_action = None
         self.last_reward = None
     
-    def update2(self, state, action, reward, newValue):
-        current_q = self.get_q(state, action)
-        if current_q == None:
-            self.q[(state, action)] = reward 
-        else:
-            self.q[(state, action)] = current_q + self.alpha * (newValue - current_q)
-    
     def update(self, state, action, reward, new_value):
         current_q = self.get_q(state, action)
         if current_q == 0:
@@ -46,9 +39,6 @@ class Agent:
             self.epsilon = self.epsilon * self.epsilon_decay
             
         return action
-    
-    def get_q2(self, state, action):
-        return self.q.get((state, action), 0.0)
     
     def get_q(self, state, action):
         return self.q[state][action]
