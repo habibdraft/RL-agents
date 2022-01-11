@@ -1,8 +1,8 @@
 import gym
-import agents
+#import agents
 
 env = gym.make('Taxi-v3')
-agent = agents.SarsaAgent(actions=env.action_space.n)
+agent = SarsaAgent(states=env.observation_space.n, actions=env.action_space.n)
 
 episodes = 10000
 total_steps = 0
