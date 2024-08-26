@@ -6,7 +6,12 @@ import matplotlib.pyplot as plt
 from collections import namedtuple, deque
 from itertools import count
 
-env = gym.make('Taxi-v3')
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+
+env = gym.make('CartPole-v1')
 
 # set up matplotlib
 is_ipython = 'inline' in matplotlib.get_backend()
@@ -15,75 +20,81 @@ if is_ipython:
 
 plt.ion()
 
-class Agent:
-    def __init__(self, states, actions, epsilon=0.7, alpha=0.7, gamma=0.7, epsilon_decay=0.9):
-        self.q = {}
-        self.actions = [i for i in range(actions)]
-        self.epsilon = epsilon
-        self.alpha = alpha
-        self.gamma = gamma
-        self.epsilon_decay = epsilon_decay
-        self.last_state = None
-        self.last_action = None
-        self.last_reward = None
-    
-    def act(self, state):
-        if random.random() < self.epsilon:
-            action = random.choice(self.actions)
-        else:
-            state_q = [self.q.get(state, a) for a in self.actions]
-            max_q = max(state_q)
-            count = state_q.count(max_q)
-            if count > 1:
-                max_actions = [a for a in self.actions if state_q[a] == max_q] 
-                index = random.choice(max_actions)
-            else:
-                index = state_q.index(max_q)
+Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state'))
 
-            action = self.actions[index]
-            self.epsilon = self.epsilon * self.epsilon_decay
-            
-        return action
+class BatchMemory(object):
+    def __init__(self, capacity):
+        self.memory = deque([], maxlen=capacity)
+    def push(self, *args):
+        self.memory.append(Transition(*args))
+    def sample(self, batch_size):
+        return random.sample(self.memory, batch_size)
+    def __len__(self):
+        return len(self.memory)
     
-    def learn(self, state, action, reward, state2, _):
-        max_q = max([self.q.get(state2, a) for a in self.actions])
-        self.update(state, action, reward, reward + self.gamma * max_q)
+class DQN(nn.Module):
+    def __init__(self, n_observations, n_actions):
+        super(DQN, self).__init__()
+        self.layer1 = nn.Linear(n_observations, 128)
+        self.layer2 = nn.Linear(128, 128)
+        self.layer3 = nn.Linear(128, n_actions)
     
-    def update(self, state, action, reward, new_value):
-        current_q = self.q.get(state, action)
-        if current_q == 0:
-            self.q[state][action] = reward 
-        else:
-            self.q[state][action] = current_q + self.alpha * (new_value - current_q)
+    def forward(self, x):
+        x = F.relu(self.layer1(x))
+        x = F.relu(self.layer2(x))
+        return self.layer3(x)
 
-n_actions = env.action_space.n
-state, info = env.reset()
-n_observations = env.observation_space.n
+class Agent():
+    def __init__(self, n_observations, n_actions):
+        self.batch_size = 128
+        self.gamma = 0.99
+        self.eps_start = 0.9
+        self.eps_end = 0.05
+        self.eps_decay = 1000
+        self.tau = 0.005
+        self.lr = 1e-4
 
-agent = Agent(states=n_observations, actions=n_actions)
-
-episodes = 10000
-total_steps = 0
-total_reward = 0
-
-for episode in range(episodes):
-    
-    state = env.reset()
-    reward = 0
-    steps = 0
-    done = False
-    
-    while not done:
-        action = agent.act(state) 
-        next_state, reward, terminated, truncated, info = env.step(action.item())
-        agent.learn(state, action, reward, next_state, _)
-        state = next_state
+        self.policy_net = DQN(n_observations, n_actions)
+        self.target_net = DQN(n_observations, n_actions)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
         
-        steps += 1
-        total_reward += reward
+        self.steps_done = 0
+        self.memory = BatchMemory(10000)
+        self.optimizer = optim.AdamW(self.policy_net.parameters(), lr=self.lr, amsgrad=True)
 
-    total_steps += steps
+    def get_action(self, state):
+        sample = random.random()
+        epsilon = self.eps_end + (self.eps_start - self.eps_end) * math.exp(-1. * self.steps_done / self.eps_decay)
+        self.steps_done += 1
+        if sample > epsilon:
+            with torch.no_grad():
+                return self.policy_net(state).max(1).indices.view(1, 1)
+        else:
+            return torch.tensor([[env.action_space.sample()]], dtype=torch.long)
     
-print("Average timesteps taken: {}".format(total_steps/episodes))
-print("Average reward: {}".format(total_reward/episodes))
-print("Total reward: {}".format(total_reward))
+    def optimize_model(self):
+        if len(self.memory) < self.batch_size:
+            return
+        transitions = self.memory.sample(self.batch_size)
+        batch = Transition(*zip(*transitions))
+        
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None, batch.next_state)), dtype=torch.bool)
+        non_final_next_states = torch.cat([s for s in batch.next_state if s is not None])
+        
+        state_batch = torch.cat(batch.state)
+        action_batch = torch.cat(batch.action)
+        reward_batch = torch.cat(batch.reward)
+        
+        q_values = self.policy_net(state_batch).gather(1, action_batch)
+        next_state_values = torch.zeros(self.batch_size)
+        with torch.no_grad():
+            next_state_values[non_final_mask] = self.target_net(non_final_next_states).max(1).values
+        q_pred = (next_state_values * self.gamma) + reward_batch
+        
+        criterion = nn.SmoothL1Loss()
+        loss = criterion(q_values, q_pred.unsqueeze(1))
+        
+        self.optimizer.zero_grad()
+        loss.backward()
+        torch.nn.utils.clip_grad_value_(self.policy_net.parameters(), 100)
+        self.optimizer.step()
