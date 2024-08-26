@@ -72,7 +72,7 @@ class Agent():
         else:
             return torch.tensor([[env.action_space.sample()]], dtype=torch.long)
     
-    def optimize_model(self):
+    def batch_update(self):
         if len(self.memory) < self.batch_size:
             return
         transitions = self.memory.sample(self.batch_size)
